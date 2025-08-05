@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kerasprf"
+version = "0.0.1"
+dependencies = [
+  "keras",
+  "tensorflow",
+]
+requires-python = ">=3.10"
+authors = [
+  {name = "Malte Luken", email = "m.luken@esciencecenter.nl"},
+]
+description = "Prototype for fitting population receptive field models with multiple backends through keras."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICEN[CS]E.*"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["kerasprf"]
