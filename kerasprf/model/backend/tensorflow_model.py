@@ -4,6 +4,10 @@ import tensorflow as tf
 
 
 class TensorFlowModel(keras.Model):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        
     def get_state(self):
         return None
     
@@ -13,8 +17,7 @@ class TensorFlowModel(keras.Model):
             y_pred = self(*x, training=True)
             loss = self.compute_loss(y=y, y_pred=y_pred)
 
-        trainable_vars = self.trainable_variables
-        gradients = tape.gradient(loss, trainable_vars)
+        gradients = tape.gradient(loss, self.trainable_variables)
 
         self.optimizer.apply(gradients, self.trainable_variables)
 
