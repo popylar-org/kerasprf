@@ -29,8 +29,14 @@ class Gaussian2DModel(BackendModel):
     def call(self, grid, stimulus, training=None):
         params = self.params
 
-        x = keras.ops.exp(-(keras.ops.sum((grid - params["centroid"])**2, axis=-1) / (2 * params["sigma"]**2))) * stimulus
-        x = keras.ops.sum(x, axis=(0, 1))
+        x = keras.ops.exp(-(keras.ops.sum((grid - params["centroid"])**2, axis=-1) / (2 * params["sigma"]**2)))
+
+        if len(params["centroid"].shape) > 3:
+            x = keras.ops.expand_dims(x, 1)
+            stimulus = keras.ops.expand_dims(stimulus, 0)
+
+        x = x * stimulus
+        x = keras.ops.sum(x, axis=(1, 2))
 
         if not training:
             return keras.ops.convert_to_numpy(x)

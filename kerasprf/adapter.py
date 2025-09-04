@@ -7,8 +7,11 @@ import keras
 
 class BaseTransform(ABC):
     def __init__(self, include):
-        super().__init__()
         self.include = include
+
+
+    def filter(self, data, fun, *args, **kwargs):
+        return {key: (fun(val, *args, **kwargs) if key in self.include else val) for key, val in data.items()}
 
     @abstractmethod
     def forward(self, data):
@@ -27,11 +30,11 @@ class Transform(BaseTransform):
 
 
     def forward(self, data):
-        return {key: (self.forward_fun(val) if key in self.include else val) for key, val in data.items()}
+        return self.filter(data=data, fun=self.forward_fun)
     
 
     def inverse(self, data):
-        return {key: (self.inverse_fun(val) if key in self.include else val) for key, val in data.items()}
+        return self.filter(data=data, fun=self.inverse_fun)
 
 
 class Broadcast(BaseTransform):
@@ -41,7 +44,35 @@ class Broadcast(BaseTransform):
 
 
     def forward(self, data):
-        return {key: (keras.ops.broadcast_to(val, shape=self.shape) if key in self.include else val) for key, val in data.items()}
+        return self.filter(data=data, fun=keras.ops.broadcast_to, shape=self.shape)
+    
+
+    def inverse(self, data):
+        return data
+    
+
+class ExpandDims(BaseTransform):
+    def __init__(self, axis, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.axis = axis
+
+
+    def forward(self, data):
+        return self.filter(data=data, fun=keras.ops.expand_dims, axis=self.axis)
+    
+
+    def inverse(self, data):
+        return data
+
+
+class Repeat(BaseTransform):
+    def __init__(self, repeats, axis, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.repeats = repeats
+        self.axis = axis
+
+    def forward(self, data):
+        return self.filter(data=data, fun=keras.ops.repeat, repeats=self.repeats, axis=self.axis)
     
 
     def inverse(self, data):
@@ -50,8 +81,6 @@ class Broadcast(BaseTransform):
 
 class Adapter:
     def __init__(self, transforms=None):
-        super().__init__()
-
         if transforms is None:
             transforms = []
     
@@ -87,6 +116,18 @@ class Adapter:
 
     def broadcast(self, include, shape):
         self.transforms.append(Broadcast(include=include, shape=shape))
+
+        return self
+    
+
+    def expand_dims(self, include, axis):
+        self.transforms.append(ExpandDims(include=include, axis=axis))
+
+        return self
+    
+
+    def repeat(self, include, repeats, axis):
+        self.transforms.append(Repeat(include=include, repeats=repeats, axis=axis))
 
         return self
     
