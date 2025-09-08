@@ -21,7 +21,8 @@ class JAXModel(keras.Model):
         state_mapping.extend(zip(self.non_trainable_variables, non_trainable_variables))
 
         with keras.StatelessScope(state_mapping) as scope:
-            y_pred = self(*x, training=True)
+            # TODO: This is a bit hacky
+            y_pred = self.model.predict(x, self.adapter.inverse({key.name: val for key, val in zip(self.trainable_variables, trainable_variables)}))
             loss = self.compute_loss(y=y, y_pred=y_pred)
 
         # update variables
