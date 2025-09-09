@@ -1,7 +1,9 @@
 
 import keras
 
+from kerasprf.model.composite_model import CompositeModel
 from kerasprf.model.encoding_model import EncodingModel
+from kerasprf.model.timeseries_model import BaselineAmplitudeModel, HRFModel, GaussianNoiseModel 
 
 
 class Gaussian2DModel(EncodingModel):
@@ -20,4 +22,26 @@ class Gaussian2DModel(EncodingModel):
         #     return keras.ops.convert_to_numpy(x)
 
         return x
+    
+
+class Gaussian2DCompositeModel(CompositeModel):
+    def __init__(self, encoding_model, *args, **kwargs):
+        super().__init__(encoding_model, *args, **kwargs)
+
+    @classmethod
+    def from_default(cls, hrf_model=True, baseline_amplitude_model=True, noise_model=False):
+        kwargs = {
+            "encoding_model": Gaussian2DModel()
+        }
+
+        if hrf_model:
+            kwargs["hrf_model"] = HRFModel()
+        
+        if baseline_amplitude_model:
+            kwargs["baseline_amplitude_model"] = BaselineAmplitudeModel()
+
+        if noise_model:
+            kwargs["noise_model"] = GaussianNoiseModel()
+
+        return cls(**kwargs)
     

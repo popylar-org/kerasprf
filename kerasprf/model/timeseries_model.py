@@ -57,7 +57,7 @@ class NoiseModel(TimeSeriesModel):
 
 
 class GaussianNoiseModel(NoiseModel):
-    def __init__(self, rng) -> None:
+    def __init__(self, rng=None) -> None:
         super().__init__(rng)
 
     @property
