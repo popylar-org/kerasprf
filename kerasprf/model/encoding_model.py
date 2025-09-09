@@ -6,8 +6,8 @@ class EncodingModel(ABC):
     @property
     @abstractmethod
     def parameter_names(self):
-        return ()
+        return []
     
     @abstractmethod
-    def predict(stimulus, parameters):
+    def predict(self, stimulus, parameters):
         pass

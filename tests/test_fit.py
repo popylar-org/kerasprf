@@ -81,6 +81,7 @@ def test_fit(stimulus, simulated_signal):
 
     fitter = ParameterFitter(model, stimulus, adapter, optimizer, loss_fn)
 
-    result = fitter.fit(simulated_signal, start_params, num_steps=10)
+    logs, params = fitter.fit(simulated_signal, start_params, num_steps=10)
 
-    assert isinstance(result, dict)
+    assert isinstance(logs, dict)
+    assert isinstance(params, dict)

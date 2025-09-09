@@ -74,4 +74,4 @@ class ParameterFitter(BaseBackendModel):
             for variable, value in zip(self.non_trainable_variables, non_trainable_variables):
                 variable.assign(value)
 
-        return logs
+        return logs, self.adapter.inverse({v.name: v.value for v in self.trainable_variables})

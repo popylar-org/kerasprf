@@ -7,7 +7,7 @@ from kerasprf.model.encoding_model import EncodingModel
 class Gaussian2DModel(EncodingModel):
     @property
     def parameter_names(self):
-        return ("centroid", "sigma")
+        return ["centroid", "sigma"]
 
 
     def predict(self, stimulus, parameters):
