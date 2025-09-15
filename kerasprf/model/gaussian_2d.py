@@ -9,13 +9,14 @@ from kerasprf.model.timeseries_model import BaselineAmplitudeModel, HRFModel, Ga
 class Gaussian2DModel(EncodingModel):
     @property
     def parameter_names(self):
-        return ["centroid", "sigma"]
+        return ["x", "y", "sigma"]
 
 
     def predict(self, stimulus, parameters):
         coordinates = keras.ops.convert_to_tensor(stimulus.coordinates)
         paradigm = keras.ops.convert_to_tensor(stimulus.paradigm)
-        x = keras.ops.exp(-(keras.ops.sum((coordinates - parameters["centroid"])**2, axis=-1) / (2 * parameters["sigma"]**2))) * paradigm
+        centroid = keras.ops.stack([parameters["x"], parameters["y"]], axis=-1)
+        x = keras.ops.exp(-(keras.ops.sum((coordinates - centroid)**2, axis=-1) / (2 * parameters["sigma"]**2))) * paradigm
         x = keras.ops.sum(x, axis=(0, 1))
 
         # if not training:

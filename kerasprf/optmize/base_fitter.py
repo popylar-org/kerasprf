@@ -10,11 +10,11 @@ from kerasprf.adapter import Adapter
 
 match keras.backend.backend():
     case "jax":
-        from .jax_fitter import JAXModel as BaseBackendModel
+        from .backend.jax_fitter import JAXModel as BaseBackendModel
     case "tensorflow":
-        from .tensorflow_fitter import TensorFlowModel as BaseBackendModel
+        from .backend.tensorflow_fitter import TensorFlowModel as BaseBackendModel
     case "torch":
-        from .torch_fitter import TorchModel as BaseBackendModel
+        from .backend.torch_fitter import TorchModel as BaseBackendModel
     case other:
         raise ValueError(f"Backend '{other}' is not supported.")
 

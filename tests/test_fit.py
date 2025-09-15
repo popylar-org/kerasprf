@@ -8,7 +8,8 @@ import pytest
 
 from kerasprf.adapter import Adapter, ParameterTransform
 from kerasprf.model.gaussian_2d import Gaussian2DModel
-from kerasprf.optmize.backend.base_fitter import ParameterFitter
+from kerasprf.optmize.base_fitter import ParameterFitter
+from kerasprf.optmize.grid_fitter import GridFitter
 from kerasprf.stimulus import Stimulus
 
 
@@ -69,7 +70,8 @@ def stimulus(paradigm, grid):
 def test_fit(stimulus, simulated_signal):
     # Define some starting values
     start_params = {
-        "centroid": np.array([0, 0]),
+        "x": 0.0,
+        "y": 0.0,
         "sigma": 1.0
     }
 
@@ -82,6 +84,28 @@ def test_fit(stimulus, simulated_signal):
     fitter = ParameterFitter(model, stimulus, adapter, optimizer, loss_fn)
 
     logs, params = fitter.fit(simulated_signal, start_params, num_steps=10)
+
+    assert isinstance(logs, dict)
+    assert isinstance(params, dict)
+
+
+def test_grid_fit(stimulus, simulated_signal):
+    # Define some starting values
+    param_grid = {
+        "x": np.arange(-5, 6, 1.0),
+        "y": np.arange(-5, 6, 1.0),
+        "sigma": np.arange(0.5, 2, 0.5)
+    }
+
+    model = Gaussian2DModel()
+
+    optimizer = keras.optimizers.Adam(learning_rate=0.1)
+
+    adapter = Adapter(transforms=[ParameterTransform("sigma", keras.ops.log, keras.ops.exp)])
+
+    fitter = GridFitter(model, stimulus, adapter, optimizer, loss_fn)
+
+    logs, params = fitter.fit(simulated_signal, param_grid)
 
     assert isinstance(logs, dict)
     assert isinstance(params, dict)
