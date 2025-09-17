@@ -1,61 +1,41 @@
 
 from abc import ABC, abstractmethod
-from collections.abc import MutableSequence
-
-import keras
 
 
-class BaseTransform(ABC):
-    def __init__(self, include):
-        super().__init__()
-        self.include = include
-
-    @abstractmethod
-    def forward(self, data):
-        pass
-
-    @abstractmethod
-    def inverse(self, data):
-        pass
-
-
-class Transform(BaseTransform):
-    def __init__(self, forward_fun, inverse_fun, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class Transform(ABC):
+    def __init__(self, forward_fun, inverse_fun):
         self.forward_fun = forward_fun
         self.inverse_fun = inverse_fun
 
+    @abstractmethod
+    def forward(self, data):
+        return dict()
+
+    @abstractmethod
+    def inverse(self, data):
+        return dict()
+
+
+class ParameterTransform(Transform):
+    def __init__(self, parameter_names, forward_fun, inverse_fun):
+        super().__init__(forward_fun, inverse_fun)
+        self.parameter_names = parameter_names
+
 
     def forward(self, data):
-        return {key: (self.forward_fun(val) if key in self.include else val) for key, val in data.items()}
+        return {key: (self.forward_fun(val) if key in self.parameter_names else val) for key, val in data.items()}
     
 
     def inverse(self, data):
-        return {key: (self.inverse_fun(val) if key in self.include else val) for key, val in data.items()}
-
-
-class Broadcast(BaseTransform):
-    def __init__(self, shape, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.shape = shape
-
-
-    def forward(self, data):
-        return {key: (keras.ops.broadcast_to(val, shape=self.shape) if key in self.include else val) for key, val in data.items()}
-    
-
-    def inverse(self, data):
-        return data
+        return {key: (self.inverse_fun(val) if key in self.parameter_names else val) for key, val in data.items()}
 
 
 class Adapter:
     def __init__(self, transforms=None):
-        super().__init__()
-
         if transforms is None:
             transforms = []
     
-        self.transforms = list(transforms)
+        self.transforms = transforms
 
 
     def forward(self, data):
@@ -70,23 +50,4 @@ class Adapter:
             data = transform.inverse(data)
 
         return data
-
-
-    def __call__(self, data, inverse=False):
-        if inverse:
-            return self.inverse(data)
-
-        return self.forward(data)
-
-
-    def transform(self, include, forward_fun, inverse_fun):
-        self.transforms.append(Transform(include=include, forward_fun=forward_fun, inverse_fun=inverse_fun))
-
-        return self
-    
-
-    def broadcast(self, include, shape):
-        self.transforms.append(Broadcast(include=include, shape=shape))
-
-        return self
     

@@ -11,7 +11,7 @@ class TorchModel(keras.Model):
     def update_model_weights(self, x, y, state=None):
         self.zero_grad()
 
-        y_pred = self(*x, training=True)
+        y_pred = self.model.predict(x, self.adapter.inverse({v.name: v.value for v in self.trainable_variables}))
         loss = self.compute_loss(y=y, y_pred=y_pred)
 
         loss.backward()

@@ -1,39 +1,48 @@
 
 import keras
 
-from .backend.base_model import BackendModel
+from kerasprf.model.composite_model import CompositeModel
+from kerasprf.model.encoding_model import EncodingModel
+from kerasprf.model.timeseries_model import BaselineAmplitudeModel, HRFModel, GaussianNoiseModel 
 
-from kerasprf.adapter import Adapter
 
-
-class Gaussian2DModel(BackendModel):
+class Gaussian2DModel(EncodingModel):
     @property
-    def required_params(self):
-        return set(["centroid", "sigma"])
-    
-    @staticmethod
-    def create_default_adapter():
-        return (Adapter()
-            .transform(include="sigma", forward_fun=keras.ops.log, inverse_fun=keras.ops.exp)
-            .broadcast(include="centroid", shape=(1, 1, 2))
-        )
-    
-    @staticmethod
-    def set_default_params():
-        return dict(
-            centroid=keras.ops.array([0, 0]),
-            sigma=1.0
-        )
+    def parameter_names(self):
+        return ["x", "y", "sigma"]
 
 
-    def call(self, grid, stimulus, training=None):
-        params = self.params
-
-        x = keras.ops.exp(-(keras.ops.sum((grid - params["centroid"])**2, axis=-1) / (2 * params["sigma"]**2))) * stimulus
+    def predict(self, stimulus, parameters):
+        coordinates = keras.ops.convert_to_tensor(stimulus.coordinates)
+        paradigm = keras.ops.convert_to_tensor(stimulus.paradigm)
+        centroid = keras.ops.stack([parameters["x"], parameters["y"]], axis=-1)
+        x = keras.ops.exp(-(keras.ops.sum((coordinates - centroid)**2, axis=-1) / (2 * parameters["sigma"]**2))) * paradigm
         x = keras.ops.sum(x, axis=(0, 1))
 
-        if not training:
-            return keras.ops.convert_to_numpy(x)
+        # if not training:
+        #     return keras.ops.convert_to_numpy(x)
 
         return x
+    
+
+class Gaussian2DCompositeModel(CompositeModel):
+    def __init__(self, encoding_model, *args, **kwargs):
+        super().__init__(encoding_model, *args, **kwargs)
+
+    @classmethod
+    def from_default(cls, hrf_model=True, baseline_amplitude_model=True, noise_model=False):
+        kwargs = {
+            "encoding_model": Gaussian2DModel()
+        }
+
+        if hrf_model:
+            kwargs["hrf_model"] = HRFModel()
+        
+        if baseline_amplitude_model:
+            kwargs["baseline_amplitude_model"] = BaselineAmplitudeModel()
+
+        if noise_model:
+            kwargs["noise_model"] = GaussianNoiseModel()
+
+        return cls(**kwargs)
     
