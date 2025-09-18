@@ -7,9 +7,8 @@ import numpy as np
 import pytest
 
 from kerasprf.adapter import Adapter, ParameterTransform
-from kerasprf.model.gaussian_2d import Gaussian2DModel
-from kerasprf.optmize.base_fitter import ParameterFitter
-from kerasprf.optmize.grid_fitter import GridFitter
+from kerasprf.model import Gaussian2DModel
+from kerasprf.optmize import GridFitter, ParameterFitter
 from kerasprf.stimulus import Stimulus
 
 
@@ -47,7 +46,8 @@ def simulated_signal(num_steps, grid, paradigm, rng):
     true_sigma = 2
 
     # pRF predictions
-    true_signal = (prf_response_fun(grid, true_centroid[None, None, :], true_sigma) * paradigm).sum(axis=(0, 1))
+    resp = prf_response_fun(grid, true_centroid[None, None, :], true_sigma)
+    true_signal = (resp * paradigm).sum(axis=(0, 1))
 
     # Add noise
     simulated_signal = true_signal + rng.normal(0, scale=0.2, size=num_steps)
@@ -65,6 +65,18 @@ def stimulus(paradigm, grid):
         paradigm,
         grid
     )
+
+
+def test_predict(stimulus):
+    params = {
+        "x": 0.0,
+        "y": 0.0,
+        "sigma": 1.0
+    }
+    model = Gaussian2DModel()
+    predictions = model.predict(stimulus, params)
+
+    assert predictions.ndim == 1
 
 
 def test_fit(stimulus, simulated_signal):

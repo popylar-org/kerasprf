@@ -1,12 +1,10 @@
 
 import keras
 
-from kerasprf.model.composite_model import CompositeModel
-from kerasprf.model.encoding_model import EncodingModel
-from kerasprf.model.timeseries_model import BaselineAmplitudeModel, HRFModel, GaussianNoiseModel 
+from kerasprf.model import BaselineAmplitudeModel, EncodingModel, GaussianNoiseModel, HRFModel, ResponseModel
 
 
-class Gaussian2DModel(EncodingModel):
+class Gaussian2DResponseModel(ResponseModel):
     @property
     def parameter_names(self):
         return ["x", "y", "sigma"]
@@ -14,35 +12,35 @@ class Gaussian2DModel(EncodingModel):
 
     def predict(self, stimulus, parameters):
         coordinates = keras.ops.convert_to_tensor(stimulus.coordinates)
-        paradigm = keras.ops.convert_to_tensor(stimulus.paradigm)
         centroid = keras.ops.stack([parameters["x"], parameters["y"]], axis=-1)
-        x = keras.ops.exp(-(keras.ops.sum((coordinates - centroid)**2, axis=-1) / (2 * parameters["sigma"]**2))) * paradigm
-        x = keras.ops.sum(x, axis=(0, 1))
-
-        # if not training:
-        #     return keras.ops.convert_to_numpy(x)
-
+        x = keras.ops.exp(-(keras.ops.sum((coordinates - centroid)**2, axis=-1) / (2 * parameters["sigma"]**2)))
         return x
-    
 
-class Gaussian2DCompositeModel(CompositeModel):
-    def __init__(self, encoding_model, *args, **kwargs):
-        super().__init__(encoding_model, *args, **kwargs)
+
+class Gaussian2DModel:
+    def __init__(self, model=None):
+        if model is None:
+            model = EncodingModel(Gaussian2DResponseModel())
+
+        self.model = model
+
+
+    def predict(self, stimulus, parameters):
+        return self.model.predict(stimulus, parameters)
+        
 
     @classmethod
     def from_default(cls, hrf_model=True, baseline_amplitude_model=True, noise_model=False):
-        kwargs = {
-            "encoding_model": Gaussian2DModel()
-        }
+        model = EncodingModel(Gaussian2DResponseModel())
 
         if hrf_model:
-            kwargs["hrf_model"] = HRFModel()
+            model = HRFModel(model)
         
         if baseline_amplitude_model:
-            kwargs["baseline_amplitude_model"] = BaselineAmplitudeModel()
+            model = BaselineAmplitudeModel(model)
 
         if noise_model:
-            kwargs["noise_model"] = GaussianNoiseModel()
+            model = GaussianNoiseModel(model)
 
-        return cls(**kwargs)
+        return cls(model)
     
